@@ -38,16 +38,21 @@ typedef uint8_t byte;
 #endif
 
 //*****************************************************************************
-// Types 1, 2 and 3: Position Report Class A
+// Types 1, 2 and 3: Position Report Class A or B
 //std::string SetAISClassAPosReport(tAISMsg &AISMsg, uint8_t MessageType, uint8_t Repeat,
-bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
+bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
 													uint32_t UserID, double Latitude, double Longitude, bool Accuracy, bool RAIM, uint8_t Seconds,
-													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, const char *Src="");
+													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, char AISClass, const char *Src="");
 
 // ****************  Helper for AIS  ***********************************
 inline std::string intToBinary( int n ) { std::string binary = std::bitset<6>(n).to_string(); return binary; }
 
 std::string strToBinary(std::string s);
-std::string convertBinaryAISPayloadToAscii( std::string bPayload, uint8_t part, uint8_t total );
+std::string convertBinaryAISPayloadToAscii( std::string bPayload );
 
+inline int32_t aRoundToInt(double x) {
+  return x >= 0
+      ? (int32_t) floor(x + 0.5)
+      : (int32_t) ceil(x - 0.5);
+}
 #endif

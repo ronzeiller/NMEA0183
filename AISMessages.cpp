@@ -25,13 +25,24 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <AISMessages.h>
-#include <AISUnitsConverts.h>
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <bitset>
 #include <unordered_map>
 #include <sstream>
+#include <math.h>
+
+const double pi=3.1415926535897932384626433832795;
+const double kmhToms=1000.0/3600.0;
+const double knToms=1852.0/3600.0;
+const double degToRad=pi/180.0;
+const double radToDeg=180.0/pi;
+const double msTokmh=3600.0/1000.0;
+const double msTokn=3600.0/1852.0;
+const double nmTom=1.852*1000;
+const double mToFathoms=0.546806649;
+const double mToFeet=3.2808398950131;
+const double N2kDoubleNA=-1e9;
+const double radsToDegMin = 60 * 360.0 / (2 * pi);    // [rad/s -> degree/minute]
 
 std::unordered_map<char, int> ac = {
 							{'@',  0}, {'A', 1}, {'B', 2}, {'C', 3}, {'D', 4}, {'E', 5}, {'F', 6}, {'G', 7}, {'H', 8}, {'I', 9},
@@ -44,7 +55,7 @@ std::unordered_map<char, int> ac = {
 							};
 
 //*****************************************************************************
-// Types 1, 2 and 3: Position Report Class A  -> https://gpsd.gitlab.io/gpsd/AIVDM.html
+// Types 1, 2 and 3: Position Report Class A or B  -> https://gpsd.gitlab.io/gpsd/AIVDM.html
 // total of 168 bits, occupying one AIVDM sentence
 // Example: !AIVDM,1,1,,A,133m@ogP00PD;88MD5MTDww@2D7k,0*46
 // Payload: Payload: 133m@ogP00PD;88MD5MTDww@2D7k
@@ -57,9 +68,9 @@ std::unordered_map<char, int> ac = {
 //    										bool &Accuracy, bool &RAIM, uint8_t &Seconds, double &COG,
 //												double &SOG, double &Heading, double &ROT, tN2kAISNavStatus &NavStatus);
 //std::string SetAISClassAPosReport(tAISMsg &AISMsg, uint8_t MessageType, uint8_t Repeat,
-bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
+bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
 													uint32_t UserID, double Latitude, double Longitude, bool Accuracy, bool RAIM, uint8_t Seconds,
-													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, const char *Src) {
+													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, char AISClass, const char *Src) {
 
   std::string payload;
   int32_t iTemp;
@@ -84,7 +95,7 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   (NavStatus >= 0 && NavStatus < 15) ? iTemp = NavStatus : iTemp = 15;
   payload.append( std::bitset<4>(iTemp).to_string() );
 
-  // 42-49	8		Rate of Turn ROT	rad/s -> degrees per minute  128 = N/A
+  // 42-49	8	[rad/s -> degree/minute]	Rate of Turn ROT	128 = N/A
   /*
     0 = not turning
     1…126 = turning right at up to 708 degrees per minute or higher
@@ -93,13 +104,13 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
     -127 = turning left at more than 5deg/30s (No TI available)
     128 (80 hex) indicates no turn information available (default)
   */
-  ROT = aRadSecondsToDegreeMinutes(ROT);
+  ROT *= radsToDegMin;
   (ROT > -128.0 && ROT < 128.0)? iTemp = aRoundToInt(ROT) : iTemp = 128;
   payload.append( std::bitset<8>(iTemp).to_string() );
 
-  // 50-59	10	SOG m/s -> Knots with one digit	x10, 1023 = N/A
-  SOG = aMsToKnot(SOG);
-  (SOG >= 0.0 && SOG < 102.3 )? iTemp = aRoundToInt( 10 * SOG) : iTemp = 1023;
+  // 50-59	10	 [m/s -> kts]	SOG with one digit	x10, 1023 = N/A
+  SOG *= msTokn;
+  (SOG >= 0.0 && SOG < 102.3 )? iTemp = aRoundToInt( 10 * SOG ) : iTemp = 1023;
   payload.append( std::bitset<10>(iTemp).to_string() );
 
   // 60	1		GPS Accuracy 1 oder 0
@@ -110,22 +121,22 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   // Longitude is given in in 1/10000 min; divide by 600000.0 to obtain degrees.
   // Values up to plus or minus 180 degrees, East = positive, West \= negative.
   // A value of 181 degrees (0x6791AC0 hex) indicates that longitude is not available and is the default.
-  (Longitude >= -180.0 && Longitude <= 180.0)? iTemp = aRoundToInt(Longitude * 600000) : iTemp = 181 * 600000;
+  (Longitude >= -180.0 && Longitude <= 180.0)? iTemp = (int) (Longitude * 600000) : iTemp = 181 * 600000;
   payload.append( std::bitset<28>(iTemp).to_string() );
 
   // 89 -> 115	27		Latitude in Minutes / 10000
   // Values up to plus or minus 90 degrees, North = positive, South = negative.
   // A value of 91 degrees (0x3412140 hex) indicates latitude is not available and is the default.
-  (Latitude >= -90.0 && Latitude <= 90.0)? iTemp = aRoundToInt(Latitude * 600000) : iTemp = 91 * 600000;
+  (Latitude >= -90.0 && Latitude <= 90.0)? iTemp = (int) (Latitude * 600000) : iTemp = 91 * 600000;
   payload.append( std::bitset<27>(iTemp).to_string() );
 
   // COG: 116 - 127 | 12  Course over ground will be 3600 (0xE10) if that data is not available.
-  COG = aRadToDeg(COG);
-  (COG >= 0.0 && COG < 360 )? iTemp = aRoundToInt(10 * COG) : iTemp = 3600;
+  COG *= radToDeg;
+  if ( COG >= 0.0 && COG < 360.0 ) { iTemp = aRoundToInt( COG * 10 ); } else { iTemp = 3600; }
   payload.append( std::bitset<12>(iTemp).to_string() );
 
-  // 128 -136		9		True Heading (HDG) rad -> 0 to 359 degrees, 511 = not available.
-  Heading = aRadToDeg(Heading);
+  // 128 -136		9		True Heading (HDG) 0 to 359 degrees, 511 = not available.
+  Heading *= radToDeg;
   (Heading >= 0.0 && Heading <= 359.0 )? iTemp = aRoundToInt( Heading ) : iTemp = 511;
   payload.append( std::bitset<9>(iTemp).to_string() );
 
@@ -151,7 +162,7 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   payload.append( std::bitset<19>(0).to_string() );
 
   // convert 6-bit binary payload to ASCI encoded payload
-  payload = convertBinaryAISPayloadToAscii(payload, 1,1);
+  payload = convertBinaryAISPayloadToAscii(payload);
 
   char ais[payload.size() + 1];
   payload.copy(ais, payload.size() + 1);
@@ -180,7 +191,7 @@ std::string strToBinary(std::string s) {
 }
 
 // *****************************************************************************
-std::string convertBinaryAISPayloadToAscii( std::string bPayload, uint8_t part, uint8_t total ) {
+std::string convertBinaryAISPayloadToAscii( std::string bPayload ) {
   std::string itu;
 
   uint32_t len      = bPayload.size();
