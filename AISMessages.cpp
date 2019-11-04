@@ -25,21 +25,13 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <AISMessages.h>
-#include <math.h>
+#include <AISUnitsConverts.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <bitset>
 #include <unordered_map>
 #include <sstream>
-
-#if !defined(roundToInt)
-uint8_t roundToInt(double val) {
-  return val >= 0
-      ? (int) floor(val + 0.5)
-      : (int) ceil(val - 0.5);
-}
-#endif
 
 std::unordered_map<char, int> ac = {
 							{'@',  0}, {'A', 1}, {'B', 2}, {'C', 3}, {'D', 4}, {'E', 5}, {'F', 6}, {'G', 7}, {'H', 8}, {'I', 9},
@@ -101,13 +93,13 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
     -127 = turning left at more than 5deg/30s (No TI available)
     128 (80 hex) indicates no turn information available (default)
   */
-  ROT = AISRadToDeg(ROT) * 60;
-  (ROT > -128.0 && ROT < 128.0)? iTemp = roundToInt(ROT) : iTemp = 128;
+  ROT = aRadSecondsToDegreeMinutes(ROT);
+  (ROT > -128.0 && ROT < 128.0)? iTemp = aRoundToInt(ROT) : iTemp = 128;
   payload.append( std::bitset<8>(iTemp).to_string() );
 
   // 50-59	10	SOG m/s -> Knots with one digit	x10, 1023 = N/A
-  SOG *= 3600.0 / 1852.0;
-  (SOG >= 0.0 && SOG < 102.3 )? iTemp = roundToInt( 10 * SOG) : iTemp = 1023;
+  SOG = aMsToKnot(SOG);
+  (SOG >= 0.0 && SOG < 102.3 )? iTemp = aRoundToInt( 10 * SOG) : iTemp = 1023;
   payload.append( std::bitset<10>(iTemp).to_string() );
 
   // 60	1		GPS Accuracy 1 oder 0
@@ -118,23 +110,23 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   // Longitude is given in in 1/10000 min; divide by 600000.0 to obtain degrees.
   // Values up to plus or minus 180 degrees, East = positive, West \= negative.
   // A value of 181 degrees (0x6791AC0 hex) indicates that longitude is not available and is the default.
-  (Longitude >= -180.0 && Longitude <= 180.0)? iTemp = (int) (Longitude * 600000) : iTemp = 181 * 600000;
+  (Longitude >= -180.0 && Longitude <= 180.0)? iTemp = aRoundToInt(Longitude * 600000) : iTemp = 181 * 600000;
   payload.append( std::bitset<28>(iTemp).to_string() );
 
   // 89 -> 115	27		Latitude in Minutes / 10000
   // Values up to plus or minus 90 degrees, North = positive, South = negative.
   // A value of 91 degrees (0x3412140 hex) indicates latitude is not available and is the default.
-  (Latitude >= -90.0 && Latitude <= 90.0)? iTemp = (int) (Latitude * 600000) : iTemp = 91 * 600000;
+  (Latitude >= -90.0 && Latitude <= 90.0)? iTemp = aRoundToInt(Latitude * 600000) : iTemp = 91 * 600000;
   payload.append( std::bitset<27>(iTemp).to_string() );
 
   // COG: 116 - 127 | 12  Course over ground will be 3600 (0xE10) if that data is not available.
-  COG = AISRadToDeg(COG);
-  (COG >= 0.0 && COG < 360 )? iTemp = roundToInt(10 * COG) : iTemp = 3600;
+  COG = aRadToDeg(COG);
+  (COG >= 0.0 && COG < 360 )? iTemp = aRoundToInt(10 * COG) : iTemp = 3600;
   payload.append( std::bitset<12>(iTemp).to_string() );
 
   // 128 -136		9		True Heading (HDG) rad -> 0 to 359 degrees, 511 = not available.
-  Heading = AISRadToDeg(Heading);
-  (Heading >= 0.0 && Heading <= 359.0 )? iTemp = roundToInt( Heading ) : iTemp = 511;
+  Heading = aRadToDeg(Heading);
+  (Heading >= 0.0 && Heading <= 359.0 )? iTemp = aRoundToInt( Heading ) : iTemp = 511;
   payload.append( std::bitset<9>(iTemp).to_string() );
 
   // 137 - 142	6	 Seconds in UTC timestamp should be 0-59, except for these special values:

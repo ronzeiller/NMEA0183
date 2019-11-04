@@ -23,8 +23,6 @@ NMEA0183/NMEA2000 library. NMEA2000 -> NMEA0183 including AIS TYPE 1, CLASS A
  The example works with ESP32 MCU Kit from AZ-Delivery which should be a 1:1 clone from Espressif 32 Kit
 */
 
-//#define DEBUGMODE // Prints parsed datas from PGN 129038 and the
-
 #define ESP32_CAN_TX_PIN GPIO_NUM_5
 #define ESP32_CAN_RX_PIN GPIO_NUM_4
 #include <NMEA2000_CAN.h>  // This will automatically choose right CAN library and create suitable NMEA2000 object

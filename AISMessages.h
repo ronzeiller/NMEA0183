@@ -37,10 +37,6 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 typedef uint8_t byte;
 #endif
 
-#ifndef
-#define radToDeg(x)   (x) * 360.0 / (2 * M_PI)
-#endif
-
 //*****************************************************************************
 // Types 1, 2 and 3: Position Report Class A
 //std::string SetAISClassAPosReport(tAISMsg &AISMsg, uint8_t MessageType, uint8_t Repeat,
@@ -50,7 +46,7 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
 
 // ****************  Helper for AIS  ***********************************
 inline std::string intToBinary( int n ) { std::string binary = std::bitset<6>(n).to_string(); return binary; }
-inline double AISRadToDeg(double x)  { return ( (x) * 360.0 / (2 * M_PI) ); }
+
 std::string strToBinary(std::string s);
 std::string convertBinaryAISPayloadToAscii( std::string bPayload, uint8_t part, uint8_t total );
 

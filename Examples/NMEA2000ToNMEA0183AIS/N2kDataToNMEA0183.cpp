@@ -21,10 +21,12 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFT
 OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+//#define DEBUGMODE // Prints parsed datas from PGN 129038 and the !AIVDM itself on Serial
 #include "N2kDataToNMEA0183.h"
 #include <N2kMessages.h>
 #include <NMEA0183Messages.h>
 #include <AISMessages.h>
+#include <AISUnitsConverts.h>
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
@@ -214,31 +216,31 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
       (_NavStatus >= 0 && _NavStatus < 15)? iTemp = _NavStatus : iTemp = 15;
       Serial.print( "NavStatus = ");Serial.print(_NavStatus); Serial.print( " --> "); Serial.println( iTemp );
 
-      _ROT = AISRadToDeg(_ROT) * 60;
-      (_ROT > -128 && _ROT < 128)? iTemp = _ROT : iTemp = 128;
+      _ROT = aRadSecondsToDegreeMinutes(_ROT);
+      (_ROT > -128.0 && _ROT < 128.0)? iTemp = aRoundToInt(_ROT) : iTemp = 128;
       Serial.print( "ROT       = ");Serial.print(_ROT); Serial.print( " --> "); Serial.println( iTemp );
 
-      _SOG *= 3600.0 / 1852.0;
-      (_SOG >= 0.0 && _SOG < 102.3)? iTemp = (int) (10 * _SOG) : iTemp = 1023;
+      _SOG = aMsToKnot(_SOG);
+      (_SOG >= 0.0 && _SOG < 102.3)? iTemp = aRoundToInt(10 * _SOG) : iTemp = 1023;
       Serial.print( "SOG       = "); Serial.print( _SOG ); Serial.print( " --> "); Serial.println( iTemp );
 
       (_Accuracy == true)? iTemp = 1 : iTemp = 0;
       Serial.print( "Accuracy  = "); Serial.print(_Accuracy); Serial.print( " --> "); Serial.println( iTemp );
 
-      (_Longitude >= -180.0 && _Longitude <= 180.0)? iTemp = (int) (_Longitude * 600000) : iTemp = 181 * 600000;
+      (_Longitude >= -180.0 && _Longitude <= 180.0)? iTemp = aRoundToInt(_Longitude * 600000) : iTemp = 181 * 600000;
       temp = std::bitset<28>( iTemp ).to_string();
       Serial.print("Longitude = ");Serial.print(_Longitude );  Serial.print( " --> "); Serial.print( iTemp ); Serial.print( " -->  "); Serial.println( temp.c_str() );
 
-      (_Latitude >= -90.0 && _Latitude <= 90.0)? iTemp = (int) (_Latitude * 600000) : iTemp = 91 * 600000;
+      (_Latitude >= -90.0 && _Latitude <= 90.0)? iTemp = aRoundToInt(_Latitude * 600000) : iTemp = 91 * 600000;
       temp = std::bitset<27>( iTemp ).to_string();
       Serial.print("Latitude  = ");Serial.print(_Latitude );  Serial.print( " --> "); Serial.print( iTemp ); Serial.print( " --> "); Serial.println( temp.c_str() );
 
-      _COG = AISRadToDeg(_COG);
-      (_COG >= 0.0 && _COG < 360)? iTemp = (int) (10 * _COG) : iTemp = 3600;
+      _COG = aRadToDeg(_COG);
+      (_COG >= 0.0 && _COG < 360)? iTemp = aRoundToInt(10 * _COG) : iTemp = 3600;
       Serial.print( "COG       = "); Serial.print( _COG ); Serial.print( " --> "); Serial.println( iTemp );
 
-      _Heading = AISRadToDeg(_Heading);
-      (_Heading >= 0.0 && _Heading <= 359.0 )? iTemp = (int) _Heading : iTemp = 511;
+      _Heading = aRadToDeg(_Heading);
+      (_Heading >= 0.0 && _Heading <= 359.0 )? iTemp = aRoundToInt(_Heading) : iTemp = 511;
       Serial.print( "Heading   = "); Serial.print( _Heading ); Serial.print( " --> "); Serial.println( iTemp );
 
       Serial.print( "RAIM      = ");Serial.print(_RAIM);Serial.println("");
@@ -249,7 +251,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
                         _Seconds, _COG, _SOG, _Heading, _ROT, _NavStatus) ) {
 
       SendMessage(NMEA0183Msg);
-
+      /* Debug only
       #ifdef DEBUGMODE  // set protected Variables in NMEA0183Msg.h to public to print this on Serial!
         Serial.print(NMEA0183Msg.Prefix);
         Serial.print(NMEA0183Msg.Sender());
@@ -264,6 +266,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
         Serial.print("\r\n");
         Serial.println("–––––––––––––––––––––––––––––––––––––––––––––––––––––");
       #endif
+      */
     } else {
       #ifdef DEBUGMODE
         Serial.println("Did not work!!");
