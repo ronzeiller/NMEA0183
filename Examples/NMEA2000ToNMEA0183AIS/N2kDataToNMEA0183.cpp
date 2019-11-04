@@ -193,7 +193,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
   tN2kAISNavStatus _NavStatus;
   uint8_t _messageType = 1;
   tNMEA0183Msg NMEA0183Msg;
-  int32_t iTemp;
+
 
   //Serial.print("Type 1 "); Serial.println( N2kMsg.PGN );
 
@@ -203,6 +203,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
     // *********************  DEBUG  *****************************************
     #ifdef DEBUGMODE
       std::string temp;
+      int32_t iTemp;
 
       (_Repeat >= 0 && _Repeat <= 3)? iTemp = _Repeat : iTemp = 0;
       Serial.print( "REPEAT    = "); Serial.print(_Repeat); Serial.print( " --> "); Serial.println( iTemp );
@@ -213,9 +214,11 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
       (_NavStatus >= 0 && _NavStatus < 15)? iTemp = _NavStatus : iTemp = 15;
       Serial.print( "NavStatus = ");Serial.print(_NavStatus); Serial.print( " --> "); Serial.println( iTemp );
 
+      _ROT = AISRadToDeg(_ROT) * 60;
       (_ROT > -128 && _ROT < 128)? iTemp = _ROT : iTemp = 128;
       Serial.print( "ROT       = ");Serial.print(_ROT); Serial.print( " --> "); Serial.println( iTemp );
 
+      _SOG *= 3600.0 / 1852.0;
       (_SOG >= 0.0 && _SOG < 102.3)? iTemp = (int) (10 * _SOG) : iTemp = 1023;
       Serial.print( "SOG       = "); Serial.print( _SOG ); Serial.print( " --> "); Serial.println( iTemp );
 
@@ -230,9 +233,11 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
       temp = std::bitset<27>( iTemp ).to_string();
       Serial.print("Latitude  = ");Serial.print(_Latitude );  Serial.print( " --> "); Serial.print( iTemp ); Serial.print( " --> "); Serial.println( temp.c_str() );
 
+      _COG = AISRadToDeg(_COG);
       (_COG >= 0.0 && _COG < 360)? iTemp = (int) (10 * _COG) : iTemp = 3600;
       Serial.print( "COG       = "); Serial.print( _COG ); Serial.print( " --> "); Serial.println( iTemp );
 
+      _Heading = AISRadToDeg(_Heading);
       (_Heading >= 0.0 && _Heading <= 359.0 )? iTemp = (int) _Heading : iTemp = 511;
       Serial.print( "Heading   = "); Serial.print( _Heading ); Serial.print( " --> "); Serial.println( iTemp );
 

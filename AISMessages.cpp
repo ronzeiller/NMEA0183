@@ -92,7 +92,7 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   (NavStatus >= 0 && NavStatus < 15) ? iTemp = NavStatus : iTemp = 15;
   payload.append( std::bitset<4>(iTemp).to_string() );
 
-  // 42-49	8		Rate of Turn ROT	128 = N/A
+  // 42-49	8		Rate of Turn ROT	rad/s -> degrees per minute  128 = N/A
   /*
     0 = not turning
     1…126 = turning right at up to 708 degrees per minute or higher
@@ -101,10 +101,12 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
     -127 = turning left at more than 5deg/30s (No TI available)
     128 (80 hex) indicates no turn information available (default)
   */
+  ROT = AISRadToDeg(ROT) * 60;
   (ROT > -128.0 && ROT < 128.0)? iTemp = roundToInt(ROT) : iTemp = 128;
   payload.append( std::bitset<8>(iTemp).to_string() );
 
-  // 50-59	10		SOG with one digit	x10, 1023 = N/A
+  // 50-59	10	SOG m/s -> Knots with one digit	x10, 1023 = N/A
+  SOG *= 3600.0 / 1852.0;
   (SOG >= 0.0 && SOG < 102.3 )? iTemp = roundToInt( 10 * SOG) : iTemp = 1023;
   payload.append( std::bitset<10>(iTemp).to_string() );
 
@@ -126,10 +128,12 @@ bool SetAISClassAPosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8
   payload.append( std::bitset<27>(iTemp).to_string() );
 
   // COG: 116 - 127 | 12  Course over ground will be 3600 (0xE10) if that data is not available.
+  COG = AISRadToDeg(COG);
   (COG >= 0.0 && COG < 360 )? iTemp = roundToInt(10 * COG) : iTemp = 3600;
   payload.append( std::bitset<12>(iTemp).to_string() );
 
-  // 128 -136		9		True Heading (HDG) 0 to 359 degrees, 511 = not available.
+  // 128 -136		9		True Heading (HDG) rad -> 0 to 359 degrees, 511 = not available.
+  Heading = AISRadToDeg(Heading);
   (Heading >= 0.0 && Heading <= 359.0 )? iTemp = roundToInt( Heading ) : iTemp = 511;
   payload.append( std::bitset<9>(iTemp).to_string() );
 
