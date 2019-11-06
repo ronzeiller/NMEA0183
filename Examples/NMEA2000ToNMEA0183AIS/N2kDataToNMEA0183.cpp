@@ -259,7 +259,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
 
         Serial.print( "RAIM      = ");Serial.print(_RAIM);Serial.println("");
 
-        Serial.print(NMEA0183Msg.Prefix);
+        Serial.print(NMEA0183Msg.GetPrefix());
         Serial.print(NMEA0183Msg.Sender());
         Serial.print(NMEA0183Msg.MessageCode());
         for (int i=0; i<NMEA0183Msg.FieldCount(); i++) {
@@ -267,7 +267,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
           Serial.print(NMEA0183Msg.Field(i));
         }
         char buf[7];
-        sprintf(buf,"*%02X\r\n",NMEA0183Msg.CheckSum);
+        sprintf(buf,"*%02X\r\n",NMEA0183Msg.GetCheckSum());
         Serial.print(buf);
         Serial.print("\r\n");
         Serial.println("–––––––––––––––––––––––––––––––––––––––––––––––––––––");

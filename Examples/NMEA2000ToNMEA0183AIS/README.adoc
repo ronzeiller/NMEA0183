@@ -27,23 +27,8 @@ NMEA0183/NMEA2000 library. NMEA2000 -> NMEA0183 including AIS TYPE 1, CLASS A
 
  This example works with ESP32 MCU Kit from AZ-Delivery which should be a 1:1 clone from Espressif 32 Kit
 
- If you uncomment
+ Debugmode in N2kDataToNMEA0183.cpp. If you uncomment
 
  //#define DEBUGMODE
 
- AND(!!)
-
- set some variables public in NMEAMsg.h then you will see the corresponding !AIVDM sentence on Serial.print
-
- class tNMEA0183Msg
-{
-  //protected:
-  public:
-    static const char *EmptyField;
-    unsigned long _MessageTime;
-    char Data[MAX_NMEA0183_MSG_LEN];
-    uint8_t iAddData;
-    char Prefix;
-    uint8_t Fields[MAX_NMEA0183_MSG_FIELDS];
-    uint8_t _FieldCount;
-    uint8_t CheckSum;
+All parsed N2k Values and the constructed !AIVDM sentence will be printed on Serial
