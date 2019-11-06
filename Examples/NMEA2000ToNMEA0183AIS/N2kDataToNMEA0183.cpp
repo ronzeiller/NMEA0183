@@ -31,13 +31,13 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
   switch (N2kMsg.PGN) {
-    case 127250UL: HandleHeading(N2kMsg);
-    case 127258UL: HandleVariation(N2kMsg);
-    case 128259UL: HandleBoatSpeed(N2kMsg);
-    case 128267UL: HandleDepth(N2kMsg);
-    case 129025UL: HandlePosition(N2kMsg);
-    case 129026UL: HandleCOGSOG(N2kMsg);
-    case 129029UL: HandleGNSS(N2kMsg);
+    case 127250UL: HandleHeading(N2kMsg); break;
+    case 127258UL: HandleVariation(N2kMsg); break;
+    case 128259UL: HandleBoatSpeed(N2kMsg); break;
+    case 128267UL: HandleDepth(N2kMsg); break;
+    case 129025UL: HandlePosition(N2kMsg); break;
+    case 129026UL: HandleCOGSOG(N2kMsg); break;
+    case 129029UL: HandleGNSS(N2kMsg); break;
     case 129038UL: HandleAISClassAPosReport(N2kMsg); break; // AIS Class A Position Report
   }
 }
@@ -194,7 +194,6 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
   double _ROT;
   tN2kAISNavStatus _NavStatus;
   tNMEA0183Msg NMEA0183Msg;
-  char _AISClass = 'A';
   uint8_t _MessageType = 1;
 
   //Serial.print("Type 1 "); Serial.println( N2kMsg.PGN );
@@ -205,7 +204,7 @@ void tN2kDataToNMEA0183::HandleAISClassAPosReport(const tN2kMsg &N2kMsg) {
 
     if ( SetAISType1PosReport(NMEA0183Msg, _MessageType, _Repeat, _UserID,
                           _Latitude, _Longitude, _Accuracy, _RAIM,
-                          _Seconds, _COG, _SOG, _Heading, _ROT, _NavStatus, _AISClass) ) {
+                          _Seconds, _COG, _SOG, _Heading, _ROT, _NavStatus, "A") ) {
 
       SendMessage(NMEA0183Msg);
 

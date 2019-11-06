@@ -39,10 +39,9 @@ typedef uint8_t byte;
 
 //*****************************************************************************
 // Types 1, 2 and 3: Position Report Class A or B
-//std::string SetAISClassAPosReport(tAISMsg &AISMsg, uint8_t MessageType, uint8_t Repeat,
 bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
 													uint32_t UserID, double Latitude, double Longitude, bool Accuracy, bool RAIM, uint8_t Seconds,
-													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, char AISClass, const char *Src="");
+													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, const char *AISClass="A", const char *Src="AI");
 
 // ****************  Helper for AIS  ***********************************
 inline std::string intToBinary( int n ) { std::string binary = std::bitset<6>(n).to_string(); return binary; }

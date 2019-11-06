@@ -57,6 +57,8 @@ protected:
   void HandlePosition(const tN2kMsg &N2kMsg); // 129025
   void HandleCOGSOG(const tN2kMsg &N2kMsg); // 129026
   void HandleGNSS(const tN2kMsg &N2kMsg); // 129029
+  void HandleAISClassAPosReport(const tN2kMsg &N2kMsg); // 129038 AIS Class A Position Report
+  
   void SetNextRMCSend() { NextRMCSend=millis()+RMCPeriod; }
   void SendRMC();
   void SendMessage(const tNMEA0183Msg &NMEA0183Msg);
@@ -79,6 +81,4 @@ public:
     SendNMEA0183MessageCallback=_SendNMEA0183MessageCallback;
   }
   void Update();
-
-  void HandleAISClassAPosReport(const tN2kMsg &N2kMsg);
 };

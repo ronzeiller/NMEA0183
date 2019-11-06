@@ -62,24 +62,18 @@ std::unordered_map<char, int> ac = {
 // Message type 1 has a payload length of 168 bits.
 // because AIS encodes messages using a 6-bits ASCII mechanism and 168 divided by 6 is 28.
 //
-// Got values from:
-// bool ParseN2kPGN129038(const tN2kMsg &N2kMsg, uint8_t &MessageID, tN2kAISRepeat &Repeat,
-//												uint32_t &UserID, double &Latitude, double &Longitude,
-//    										bool &Accuracy, bool &RAIM, uint8_t &Seconds, double &COG,
-//												double &SOG, double &Heading, double &ROT, tN2kAISNavStatus &NavStatus);
-//std::string SetAISClassAPosReport(tAISMsg &AISMsg, uint8_t MessageType, uint8_t Repeat,
+// Got values from: ParseN2kPGN129038()
 bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_t Repeat,
-													uint32_t UserID, double Latitude, double Longitude, bool Accuracy, bool RAIM, uint8_t Seconds,
-													double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, char AISClass, const char *Src) {
+                          uint32_t UserID, double Latitude, double Longitude, bool Accuracy, bool RAIM, uint8_t Seconds,
+                          double COG, double SOG, double Heading, double ROT, uint8_t NavStatus, const char *AISClass, const char *Src) {
 
   std::string payload;
   int32_t iTemp;
 
   // AIS Type 1 Message
-  // Fields	Len	Description
+  // Fields Len Description
   // ––––––––––––––––––––––
-	// 0-5	  6		Message Type	Constant 1-3
-	// $enc .= str_pad(decbin( $this->ado->TYPE ), 6, '0', STR_PAD_LEFT);
+  // 0-5    6   Message Type  Constant 1-3
   (MessageType >= 0 && MessageType <= 3  )? iTemp = MessageType : iTemp = 1;
   payload.append( std::bitset<6>(iTemp).to_string() );
 
@@ -87,15 +81,15 @@ bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_
   (Repeat >= 0 && Repeat <= 3)? iTemp = Repeat : iTemp = 0;
   payload.append( std::bitset<2>(iTemp).to_string() );
 
-  // 8-37	30		MMSI				9 decimal digits
+  // 8-37 30    MMSI        9 decimal digits
   (UserID > 0 && UserID < 999999999)? iTemp = UserID : iTemp = 0;
   payload.append( std::bitset<30>(iTemp).to_string() );
 
-	// 38-41	4		Navigational Status	e.g.: "Under way sailing"
+  // 38-41  4   Navigational Status e.g.: "Under way sailing"
   (NavStatus >= 0 && NavStatus < 15) ? iTemp = NavStatus : iTemp = 15;
   payload.append( std::bitset<4>(iTemp).to_string() );
 
-  // 42-49	8	[rad/s -> degree/minute]	Rate of Turn ROT	128 = N/A
+  // 42-49  8 [rad/s -> degree/minute]  Rate of Turn ROT  128 = N/A
   /*
     0 = not turning
     1…126 = turning right at up to 708 degrees per minute or higher
@@ -108,23 +102,23 @@ bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_
   (ROT > -128.0 && ROT < 128.0)? iTemp = aRoundToInt(ROT) : iTemp = 128;
   payload.append( std::bitset<8>(iTemp).to_string() );
 
-  // 50-59	10	 [m/s -> kts]	SOG with one digit	x10, 1023 = N/A
+  // 50-59  10   [m/s -> kts] SOG with one digit  x10, 1023 = N/A
   SOG *= msTokn;
   (SOG >= 0.0 && SOG < 102.3 )? iTemp = aRoundToInt( 10 * SOG ) : iTemp = 1023;
   payload.append( std::bitset<10>(iTemp).to_string() );
 
-  // 60	1		GPS Accuracy 1 oder 0
+  // 60 1   GPS Accuracy 1 oder 0
   (Accuracy == true)? iTemp = 1 : iTemp = 0;
   payload.append(std::bitset<1>(iTemp).to_string() );
 
-  // 61-88	28		Longitude in Minutes / 10000
+  // 61-88  28    Longitude in Minutes / 10000
   // Longitude is given in in 1/10000 min; divide by 600000.0 to obtain degrees.
   // Values up to plus or minus 180 degrees, East = positive, West \= negative.
   // A value of 181 degrees (0x6791AC0 hex) indicates that longitude is not available and is the default.
   (Longitude >= -180.0 && Longitude <= 180.0)? iTemp = (int) (Longitude * 600000) : iTemp = 181 * 600000;
   payload.append( std::bitset<28>(iTemp).to_string() );
 
-  // 89 -> 115	27		Latitude in Minutes / 10000
+  // 89 -> 115  27    Latitude in Minutes / 10000
   // Values up to plus or minus 90 degrees, North = positive, South = negative.
   // A value of 91 degrees (0x3412140 hex) indicates latitude is not available and is the default.
   (Latitude >= -90.0 && Latitude <= 90.0)? iTemp = (int) (Latitude * 600000) : iTemp = 91 * 600000;
@@ -135,12 +129,12 @@ bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_
   if ( COG >= 0.0 && COG < 360.0 ) { iTemp = aRoundToInt( COG * 10 ); } else { iTemp = 3600; }
   payload.append( std::bitset<12>(iTemp).to_string() );
 
-  // 128 -136		9		True Heading (HDG) 0 to 359 degrees, 511 = not available.
+  // 128 -136   9   True Heading (HDG) 0 to 359 degrees, 511 = not available.
   Heading *= radToDeg;
   (Heading >= 0.0 && Heading <= 359.0 )? iTemp = aRoundToInt( Heading ) : iTemp = 511;
   payload.append( std::bitset<9>(iTemp).to_string() );
 
-  // 137 - 142	6	 Seconds in UTC timestamp should be 0-59, except for these special values:
+  // 137 - 142  6  Seconds in UTC timestamp should be 0-59, except for these special values:
   // 60 if time stamp is not available (default)
   // 61 if positioning system is in manual input mode
   // 62 if Electronic Position Fixing System operates in estimated (dead reckoning) mode,
@@ -148,33 +142,35 @@ bool SetAISType1PosReport(tNMEA0183Msg &NMEA0183Msg, uint8_t MessageType, uint8_
   (Seconds >= 0 && Seconds <= 63 )? iTemp = Seconds : iTemp = 60;
   payload.append( std::bitset<6>(iTemp).to_string() );
 
-  // 143 - 144	2		Maneuver Indicator: 0 (default) 1, 2  (not delivered within this PGN)
+  // 143 - 144  2   Maneuver Indicator: 0 (default) 1, 2  (not delivered within this PGN)
   payload.append( std::bitset<2>(0).to_string() );
 
   // 145-147  3 spare
   payload.append( std::bitset<3>(0).to_string() );
 
-  // 148 - 148	1		RAIM flag 0 = RAIM not in use (default), 1 = RAIM in use
+  // 148 - 148  1   RAIM flag 0 = RAIM not in use (default), 1 = RAIM in use
   (RAIM == true)? iTemp = 1 : iTemp = 0;
   payload.append(std::bitset<1>(iTemp).to_string() );
 
-  // 149 - 167	19		Radio Status
+  // 149 - 167  19    Radio Status
   payload.append( std::bitset<19>(0).to_string() );
 
   // convert 6-bit binary payload to ASCI encoded payload
   payload = convertBinaryAISPayloadToAscii(payload);
 
+  /* not needed
   char ais[payload.size() + 1];
   payload.copy(ais, payload.size() + 1);
   ais[payload.size()] = '\0';
+  */
 
   char _Prefix='!';
-  if ( !NMEA0183Msg.Init("VDM","AI", _Prefix)) return false;
-  if ( !NMEA0183Msg.AddStrField("1")) return false;
-  if ( !NMEA0183Msg.AddStrField("1")) return false;
-  if ( !NMEA0183Msg.AddEmptyField()) return false;
-  if ( !NMEA0183Msg.AddStrField("A")) return false;
-  if ( !NMEA0183Msg.AddStrField( ais )) return false;
+  if ( !NMEA0183Msg.Init("VDM","AI", _Prefix) ) return false;
+  if ( !NMEA0183Msg.AddStrField("1") ) return false;
+  if ( !NMEA0183Msg.AddStrField("1") ) return false;
+  if ( !NMEA0183Msg.AddEmptyField() ) return false;
+  if ( !NMEA0183Msg.AddStrField(AISClass) ) return false;
+  if ( !NMEA0183Msg.AddStrField( payload.c_str() ) ) return false;
 
   return true;
 }
